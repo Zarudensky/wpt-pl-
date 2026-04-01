@@ -1,0 +1,2498 @@
+
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <title>Word Pairs Trainer (Для Кума)</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='%2358cc02' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Ccircle cx='12' cy='12' r='1.2' fill='%2358cc02' stroke='none'/%3E%3C/g%3E%3C/svg%3E" />
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    :root {
+      --bg: #111827;
+      --panel: #1f2937;
+      --panel-2: #0f172a;
+      --card: #1f2937;
+      --card-border: #334155;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #58cc02;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --selected: #2563eb;
+      --record: #fbbf24;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      height: 100%;
+      overscroll-behavior: none;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 640px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(180deg, #0b1220 0%, #111827 100%);
+    }
+
+    .topbar {
+      position: fixed;
+      width: 100%;
+      top: 0;
+      z-index: 10;
+      background: rgba(17, 24, 39, 0.95);
+      backdrop-filter: blur(8px);
+      padding: calc(env(safe-area-inset-top) + 12px) 16px 12px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .space-between {
+      justify-content: space-between;
+    }
+
+    .title {
+      font-size: 20px;
+      font-weight: 800;
+      margin: 0;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    .progress-wrap {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .progress {
+      width: 100%;
+      height: 12px;
+      background: #243041;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #58cc02, #84cc16);
+      border-radius: inherit;
+      transition: width 220ms ease;
+    }
+
+    .timer {
+      font-weight: 800;
+      font-size: 16px;
+      min-width: 54px;
+      text-align: right;
+    }
+
+    main {
+      flex: 1;
+      padding: 94px 16px;
+    }
+
+    .panel {
+      background: rgba(31, 41, 55, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: 0 14px 28px rgba(0,0,0,0.18);
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .settings-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .settings-inline-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .word-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .word-col {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card {
+      min-height: 66px;
+      border-radius: 16px;
+      border: 2px solid var(--card-border);
+      background: linear-gradient(180deg, #1f2937, #18212f);
+      color: var(--text);
+      font-weight: 700;
+      font-size: 18px;
+      padding: 14px 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 120ms ease, background-color 180ms ease, border-color 180ms ease, opacity 180ms ease;
+      cursor: pointer;
+    }
+
+    .card:active { transform: scale(0.98); }
+    .card.selected { border-color: var(--selected); background: #1d4ed8; }
+    .card.correct { border-color: var(--success); background: #15803d; }
+    .card.incorrect { border-color: var(--danger); background: #b91c1c; }
+    .card.hidden { visibility: hidden; pointer-events: none; }
+    .card.disabled { opacity: 0.65; pointer-events: none; }
+    .card.incoming { animation: incoming-pop 240ms ease; }
+
+    @keyframes incoming-pop {
+      0% { transform: scale(0.92); opacity: 0.35; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .btn {
+      border: none;
+      background: var(--accent);
+      color: #06280a;
+      font-weight: 800;
+      border-radius: 16px;
+      min-height: 52px;
+      padding: 0 16px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .btn.secondary {
+      background: #334155;
+      color: var(--text);
+    }
+
+    .btn.danger {
+      background: #7f1d1d;
+      color: white;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: #233041;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .muted { color: var(--muted); }
+    .small { font-size: 13px; }
+    .tiny { font-size: 12px; }
+    .section-title {
+      margin: 0 0 8px;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .item {
+      border-radius: 16px;
+      background: #182536;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      padding: 12px;
+    }
+
+    .item h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .item p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .summary-card {
+      border-radius: 18px;
+      border: 1px solid rgba(96, 165, 250, 0.18);
+      padding: 14px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+
+    .summary-card h3 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .summary-card p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    input, select {
+      width: 100%;
+      min-height: 48px;
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: #0f172a;
+      color: var(--text);
+      padding: 0 40px 0 14px;
+      font-size: 15px;
+    }
+
+    select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-position: right 14px center;
+      background-size: 18px 18px;
+      background-repeat: no-repeat;
+      padding-right: 44px;
+    }
+
+    .custom-select {
+      position: relative;
+      width: 100%;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    }
+
+    .custom-select-trigger {
+      width: 100%;
+      min-height: 48px;
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: #0f172a;
+      color: var(--text);
+      padding: 0 44px 0 14px;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      position: relative;
+      user-select: none;
+    }
+
+    .custom-select-trigger::after {
+      content: "";
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid #94a3b8;
+      border-bottom: 2px solid #94a3b8;
+      transform: translateY(-65%) rotate(45deg);
+      transition: transform 160ms ease;
+      pointer-events: none;
+    }
+
+    .custom-select.open .custom-select-trigger::after {
+      transform: translateY(-35%) rotate(225deg);
+    }
+
+    .custom-select-menu {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(100% + 8px);
+      background: #182536;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 14px;
+      box-shadow: 0 14px 28px rgba(0,0,0,0.25);
+      overflow: hidden;
+      z-index: 40;
+      opacity: 0;
+      transform: translateY(-6px) scale(0.98);
+      pointer-events: none;
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    .custom-select.open .custom-select-menu {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .custom-select-option {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      color: var(--text);
+      cursor: pointer;
+      background: transparent;
+      transition: background-color 140ms ease;
+    }
+
+    .custom-select-option:hover,
+    .custom-select-option.active {
+      background: #243041;
+    }
+
+    .result-flash {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .result-flash::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -130%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), rgba(255,255,255,0.16), transparent);
+      transform: skewX(-22deg);
+      animation: result-shine 1.25s ease;
+      pointer-events: none;
+    }
+
+    @keyframes result-shine {
+      from { left: -130%; }
+      to { left: 150%; }
+    }
+
+    .bottom-nav {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 0;
+      width: 100%;
+      max-width: 640px;
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(148, 163, 184, 0.12);
+      padding: 8px 10px calc(env(safe-area-inset-bottom) + 10px);
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .nav-btn {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 14px;
+      min-height: 52px;
+      min-width: 0;
+      padding: 6px 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .nav-btn.active {
+      background: #18212f;
+      color: var(--accent);
+    }
+
+    .icon {
+      width: 22px;
+      height: 22px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .banner {
+      border: 1px solid rgba(245, 158, 11, 0.28);
+      background: rgba(120, 53, 15, 0.28);
+      border-radius: 16px;
+      padding: 12px;
+      color: #fde68a;
+      font-size: 13px;
+    }
+
+    .record-banner {
+      border: 1px solid rgba(251, 191, 36, 0.45);
+      background: #2d2413;
+      color: #fde68a;
+      animation: record-glow 1.4s ease-in-out infinite alternate;
+    }
+
+    .best-result-panel {
+      border: 1px solid rgba(96, 165, 250, 0.24);
+      background: #162334;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+    }
+
+    .best-result-panel .section-title {
+      color: #dbeafe;
+    }
+
+    .best-result-panel .item,
+    .best-result-panel .summary-card,
+    .best-result-panel .stat {
+      border-color: rgba(96, 165, 250, 0.16);
+    }
+
+    @keyframes record-glow {
+      from { box-shadow: 0 0 0 rgba(251, 191, 36, 0.12); }
+      to { box-shadow: 0 0 18px rgba(251, 191, 36, 0.28); }
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.62);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 50;
+    }
+
+    .modal-backdrop.open { display: flex; }
+
+    .modal {
+      width: 100%;
+      max-width: 420px;
+      background: #111827;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.35);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .modal h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .stat {
+      background: #182536;
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 16px;
+      padding: 12px;
+    }
+
+    .stat .k {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .stat .v {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .empty {
+      padding: 18px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed rgba(148, 163, 184, 0.22);
+      border-radius: 16px;
+    }
+
+    .hr {
+      height: 1px;
+      background: rgba(148, 163, 184, 0.12);
+      margin: 4px 0;
+    }
+
+    .record-modal {
+      border-color: rgba(251, 191, 36, 0.4);
+      background:
+        radial-gradient(circle at top, rgba(251, 191, 36, 0.12), transparent 40%),
+        #111827;
+      animation: record-modal-pop 320ms ease;
+    }
+
+    @keyframes record-modal-pop {
+      0% { transform: scale(0.92); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .record-badge {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+      background: radial-gradient(circle, rgba(251, 191, 36, 0.28), rgba(146, 64, 14, 0.18));
+      border: 1px solid rgba(251, 191, 36, 0.45);
+      color: #fde68a;
+    }
+
+    .record-badge svg {
+      width: 36px;
+      height: 36px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .confetti {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .confetti span {
+      position: absolute;
+      top: -12px;
+      width: 8px;
+      height: 16px;
+      border-radius: 999px;
+      opacity: 0.9;
+      animation: confetti-fall 1.8s linear infinite;
+    }
+
+    @keyframes confetti-fall {
+      0% { transform: translateY(-10px) rotate(0deg); opacity: 0; }
+      10% { opacity: 1; }
+      100% { transform: translateY(320px) rotate(320deg); opacity: 0; }
+    }
+
+    .confetti span:nth-child(1) { left: 8%; background: #fbbf24; animation-delay: 0s; }
+    .confetti span:nth-child(2) { left: 18%; background: #22c55e; animation-delay: 0.2s; }
+    .confetti span:nth-child(3) { left: 29%; background: #60a5fa; animation-delay: 0.45s; }
+    .confetti span:nth-child(4) { left: 42%; background: #f472b6; animation-delay: 0.1s; }
+    .confetti span:nth-child(5) { left: 56%; background: #fbbf24; animation-delay: 0.35s; }
+    .confetti span:nth-child(6) { left: 68%; background: #34d399; animation-delay: 0.55s; }
+    .confetti span:nth-child(7) { left: 79%; background: #a78bfa; animation-delay: 0.15s; }
+    .confetti span:nth-child(8) { left: 90%; background: #fb7185; animation-delay: 0.5s; }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+
+    .nav-label {
+      width: 100%;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.15;
+    }
+
+    .item-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .item-content {
+      flex: 1 1 180px;
+      min-width: 0;
+    }
+
+    .item-actions {
+      display: flex;
+      flex: 1 1 220px;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+      min-width: 0;
+      margin-top: 10px;
+    }
+
+    .item-actions .btn {
+      flex: 1 1 132px;
+      min-width: 0;
+    }
+
+    .page-header {
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+
+    .page-header .btn {
+      flex: 0 0 auto;
+    }
+
+    #trainingView {
+      margin-top: 40px;
+    }
+
+    @media (max-width: 480px) {
+      main {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+
+      .panel {
+        padding: 12px;
+      }
+
+      .item-actions {
+        width: 100%;
+        justify-content: stretch;
+      }
+
+      .item-actions .btn {
+        flex: 1 1 calc(50% - 4px);
+      }
+    }
+
+    @media (max-width: 390px) {
+      .bottom-nav {
+        gap: 6px;
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+
+      .nav-btn {
+        font-size: 10px;
+        min-height: 50px;
+      }
+
+      .icon,
+      .icon svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .item-actions .btn {
+        flex-basis: 100%;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .card { font-size: 16px; min-height: 62px; }
+      .title { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar" id="topbar"></div>
+    <main id="main"></main>
+    <nav class="bottom-nav" id="bottomNav"></nav>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal" id="modal"></div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'word_pairs_app_v6';
+    const DEFAULT_SESSION_SECONDS = 120;
+    const BOARD_TARGET_SIZE = 5;
+    const BATCH_REPLACEMENT_SIZE = 2;
+
+    const defaultGroups = [
+      {
+        id: crypto.randomUUID(),
+        name: 'Побут',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Подорожі',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Комунікація',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Базові слова',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      }
+    ];
+
+    const defaultPairs = [
+      ['стілець', 'krzesło', defaultGroups[0].id],
+      ['стіл', 'stół', defaultGroups[0].id],
+      ['вікно', 'okno', defaultGroups[0].id],
+      ['двері', 'drzwi', defaultGroups[0].id],
+      ['лампа', 'lampa', defaultGroups[0].id],
+      ['кухня', 'kuchnia', defaultGroups[0].id],
+      ['рушник', 'ręcznik', defaultGroups[0].id],
+      ['дзеркало', 'lustro', defaultGroups[0].id],
+      ['ліжко', 'łóżko', defaultGroups[0].id],
+      ['підлога', 'podłoga', defaultGroups[0].id],
+      ['шафа', 'szafa', defaultGroups[0].id],
+      ['подушка', 'poduszka', defaultGroups[0].id],
+      ['ковдра', 'kołdra', defaultGroups[0].id],
+      ['тарілка', 'talerz', defaultGroups[0].id],
+      ['чашка', 'kubek', defaultGroups[0].id],
+      ['ложка', 'łyżka', defaultGroups[0].id],
+      ['виделка', 'widelec', defaultGroups[0].id],
+      ['ніж', 'nóż', defaultGroups[0].id],
+      ['холодильник', 'lodówka', defaultGroups[0].id],
+      ['морозильник', 'zamrażarka', defaultGroups[0].id],
+      ['плита', 'kuchenka', defaultGroups[0].id],
+      ['духовка', 'piekarnik', defaultGroups[0].id],
+      ['мийка', 'zlew', defaultGroups[0].id],
+      ['кран', 'kran', defaultGroups[0].id],
+      ['мило', 'mydło', defaultGroups[0].id],
+      ['шампунь', 'szampon', defaultGroups[0].id],
+      ['щітка', 'szczotka', defaultGroups[0].id],
+      ['гребінець', 'grzebień', defaultGroups[0].id],
+      ['диван', 'sofa', defaultGroups[0].id],
+      ['крісло', 'fotel', defaultGroups[0].id],
+      ['полиця', 'półka', defaultGroups[0].id],
+      ['килим', 'dywan', defaultGroups[0].id],
+      ['штора', 'zasłona', defaultGroups[0].id],
+      ['пральна машина', 'pralka', defaultGroups[0].id],
+      ['сушарка', 'suszarka', defaultGroups[0].id],
+      ['праска', 'żelazko', defaultGroups[0].id],
+      ['кошик', 'kosz', defaultGroups[0].id],
+      ['відро для сміття', 'kosz na śmieci', defaultGroups[0].id],
+      ['серветка', 'serwetka', defaultGroups[0].id],
+      ['склянка', 'szklanka', defaultGroups[0].id],
+      ['чайник', 'czajnik', defaultGroups[0].id],
+      ['тостер', 'toster', defaultGroups[0].id],
+      ['мікрохвильовка', 'mikrofalówka', defaultGroups[0].id],
+      ['вентилятор', 'wentylator', defaultGroups[0].id],
+      ['обігрівач', 'grzejnik', defaultGroups[0].id],
+      ['вимикач', 'wyłącznik', defaultGroups[0].id],
+      ['розетка', 'gniazdko', defaultGroups[0].id],
+      ['коридор', 'korytarz', defaultGroups[0].id],
+      ['балкон', 'balkon', defaultGroups[0].id],
+      ['стіна', 'ściana', defaultGroups[0].id],
+      ['аеропорт', 'lotnisko', defaultGroups[1].id],
+      ['літак', 'samolot', defaultGroups[1].id],
+      ['квиток', 'bilet', defaultGroups[1].id],
+      ['паспорт', 'paszport', defaultGroups[1].id],
+      ['віза', 'wiza', defaultGroups[1].id],
+      ['рейс', 'lot', defaultGroups[1].id],
+      ['багаж', 'bagaż', defaultGroups[1].id],
+      ['валіза', 'walizka', defaultGroups[1].id],
+      ['реєстрація', 'odprawa', defaultGroups[1].id],
+      ['вихід', 'bramka', defaultGroups[1].id],
+      ['прибуття', 'przylot', defaultGroups[1].id],
+      ['відправлення', 'odlot', defaultGroups[1].id],
+      ['готель', 'hotel', defaultGroups[1].id],
+      ['кімната', 'pokój', defaultGroups[1].id],
+      ['бронювання', 'rezerwacja', defaultGroups[1].id],
+      ['рецепція', 'recepcja', defaultGroups[1].id],
+      ['ліфт', 'winda', defaultGroups[1].id],
+      ['поверх', 'piętro', defaultGroups[1].id],
+      ['місто', 'miasto', defaultGroups[1].id],
+      ['вулиця', 'ulica', defaultGroups[1].id],
+      ['карта', 'mapa', defaultGroups[1].id],
+      ['навігація', 'nawigacja', defaultGroups[1].id],
+      ['таксі', 'taksówka', defaultGroups[1].id],
+      ['автобус', 'autobus', defaultGroups[1].id],
+      ['поїзд', 'pociąg', defaultGroups[1].id],
+      ['станція', 'stacja', defaultGroups[1].id],
+      ['оренда', 'wynajem', defaultGroups[1].id],
+      ['авто', 'samochód', defaultGroups[1].id],
+      ['водій', 'kierowca', defaultGroups[1].id],
+      ['дорога', 'droga', defaultGroups[1].id],
+      ['перехрестя', 'skrzyżowanie', defaultGroups[1].id],
+      ['поворот', 'zakręt', defaultGroups[1].id],
+      ['прямо', 'prosto', defaultGroups[1].id],
+      ['ліворуч', 'lewo', defaultGroups[1].id],
+      ['праворуч', 'prawo', defaultGroups[1].id],
+      ['швидкість', 'prędkość', defaultGroups[1].id],
+      ['обмеження', 'ograniczenie', defaultGroups[1].id],
+      ['зупинка', 'przystanek', defaultGroups[1].id],
+      ['парковка', 'parking', defaultGroups[1].id],
+      ['квитанція', 'paragon', defaultGroups[1].id],
+      ['гроші', 'pieniądze', defaultGroups[1].id],
+      ['обмін', 'wymiana', defaultGroups[1].id],
+      ['банк', 'bank', defaultGroups[1].id],
+      ['документи', 'dokumenty', defaultGroups[1].id],
+      ['митниця', 'cło', defaultGroups[1].id],
+      ['контроль', 'kontrola', defaultGroups[1].id],
+      ['подорож', 'podróż', defaultGroups[1].id],
+      ['відпустка', 'wakacje', defaultGroups[1].id],
+      ['турист', 'turysta', defaultGroups[1].id],
+      ['маршрут', 'trasa', defaultGroups[1].id],
+      ['говорити', 'mówić', defaultGroups[2].id],
+      ['слухати', 'słuchać', defaultGroups[2].id],
+      ['чути', 'słyszeć', defaultGroups[2].id],
+      ['бачити', 'widzieć', defaultGroups[2].id],
+      ['дивитися', 'oglądać', defaultGroups[2].id],
+      ['читати', 'czytać', defaultGroups[2].id],
+      ['писати', 'pisać', defaultGroups[2].id],
+      ['сказати', 'powiedzieć', defaultGroups[2].id],
+      ['відповісти', 'odpowiedzieć', defaultGroups[2].id],
+      ['питання', 'pytanie', defaultGroups[2].id],
+      ['слово', 'słowo', defaultGroups[2].id],
+      ['речення', 'zdanie', defaultGroups[2].id],
+      ['мова', 'język', defaultGroups[2].id],
+      ['розмова', 'rozmowa', defaultGroups[2].id],
+      ['телефон', 'telefon', defaultGroups[2].id],
+      ['дзвінок', 'telefon', defaultGroups[2].id],
+      ['повідомлення', 'wiadomość', defaultGroups[2].id],
+      ['лист', 'list', defaultGroups[2].id],
+      ['електронна пошта', 'email', defaultGroups[2].id],
+      ['зустріч', 'spotkanie', defaultGroups[2].id],
+      ['обговорення', 'dyskusja', defaultGroups[2].id],
+      ['ідея', 'pomysł', defaultGroups[2].id],
+      ['думка', 'myśl', defaultGroups[2].id],
+      ['пояснити', 'wyjaśnić', defaultGroups[2].id],
+      ['запитати', 'zapytać', defaultGroups[2].id],
+      ['відповідь', 'odpowiedź', defaultGroups[2].id],
+      ['зрозуміти', 'zrozumieć', defaultGroups[2].id],
+      ['помилка', 'błąd', defaultGroups[2].id],
+      ['правильно', 'poprawnie', defaultGroups[2].id],
+      ['неправильно', 'źle', defaultGroups[2].id],
+      ['важливо', 'ważne', defaultGroups[2].id],
+      ['просто', 'prosto', defaultGroups[2].id],
+      ['складно', 'trudno', defaultGroups[2].id],
+      ['швидко', 'szybko', defaultGroups[2].id],
+      ['повільно', 'wolno', defaultGroups[2].id],
+      ['голосно', 'głośno', defaultGroups[2].id],
+      ['тихо', 'cicho', defaultGroups[2].id],
+      ['чітко', 'wyraźnie', defaultGroups[2].id],
+      ['незрозуміло', 'niejasno', defaultGroups[2].id],
+      ['повторити', 'powtórzyć', defaultGroups[2].id],
+      ['перекласти', 'przetłumaczyć', defaultGroups[2].id],
+      ['слухач', 'słuchacz', defaultGroups[2].id],
+      ['співрозмовник', 'rozmówca', defaultGroups[2].id],
+      ['діалог', 'dialog', defaultGroups[2].id],
+      ['контакт', 'kontakt', defaultGroups[2].id],
+      ['зв’язок', 'połączenie', defaultGroups[2].id],
+      ['інформація', 'informacja', defaultGroups[2].id],
+      ['дані', 'dane', defaultGroups[2].id],
+      ['знання', 'wiedza', defaultGroups[2].id],
+      ['приклад', 'przykład', defaultGroups[2].id],
+      ['я', 'ja', defaultGroups[3].id],
+      ['ти', 'ty', defaultGroups[3].id],
+      ['він', 'on', defaultGroups[3].id],
+      ['вона', 'ona', defaultGroups[3].id],
+      ['воно', 'to', defaultGroups[3].id],
+      ['ми', 'my', defaultGroups[3].id],
+      ['вони', 'oni', defaultGroups[3].id],
+      ['це', 'to', defaultGroups[3].id],
+      ['той', 'tamten', defaultGroups[3].id],
+      ['тут', 'tu', defaultGroups[3].id],
+      ['там', 'tam', defaultGroups[3].id],
+      ['де', 'gdzie', defaultGroups[3].id],
+      ['що', 'co', defaultGroups[3].id],
+      ['хто', 'kto', defaultGroups[3].id],
+      ['коли', 'kiedy', defaultGroups[3].id],
+      ['чому', 'dlaczego', defaultGroups[3].id],
+      ['як', 'jak', defaultGroups[3].id],
+      ['так', 'tak', defaultGroups[3].id],
+      ['ні', 'nie', defaultGroups[3].id],
+      ['можливо', 'może', defaultGroups[3].id],
+      ['зараз', 'teraz', defaultGroups[3].id],
+      ['потім', 'później', defaultGroups[3].id],
+      ['завжди', 'zawsze', defaultGroups[3].id],
+      ['ніколи', 'nigdy', defaultGroups[3].id],
+      ['іноді', 'czasami', defaultGroups[3].id],
+      ['дуже', 'bardzo', defaultGroups[3].id],
+      ['багато', 'dużo', defaultGroups[3].id],
+      ['мало', 'mało', defaultGroups[3].id],
+      ['великий', 'duży', defaultGroups[3].id],
+      ['малий', 'mały', defaultGroups[3].id],
+      ['новий', 'nowy', defaultGroups[3].id],
+      ['старий', 'stary', defaultGroups[3].id],
+      ['добрий', 'dobry', defaultGroups[3].id],
+      ['поганий', 'zły', defaultGroups[3].id],
+      ['кращий', 'lepszy', defaultGroups[3].id],
+      ['гірший', 'gorszy', defaultGroups[3].id],
+      ['день', 'dzień', defaultGroups[3].id],
+      ['ніч', 'noc', defaultGroups[3].id],
+      ['час', 'czas', defaultGroups[3].id],
+      ['рік', 'rok', defaultGroups[3].id],
+      ['людина', 'człowiek', defaultGroups[3].id],
+      ['робота', 'praca', defaultGroups[3].id],
+      ['життя', 'życie', defaultGroups[3].id],
+      ['світ', 'świat', defaultGroups[3].id],
+      ['друг', 'przyjaciel', defaultGroups[3].id],
+      ['сім’я', 'rodzina', defaultGroups[3].id],
+      ['дім', 'dom', defaultGroups[3].id],
+      ['місце', 'miejsce', defaultGroups[3].id],
+      ['річ', 'rzecz', defaultGroups[3].id],
+      ['справа', 'sprawa', defaultGroups[3].id],
+    ].map(([ua, en, groupId]) => ({
+      id: crypto.randomUUID(),
+      groupId,
+      ua,
+      en,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      isActive: true,
+    }));
+
+    const state = loadState();
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          return {
+            view: parsed.view || 'training',
+            groups: parsed.groups || defaultGroups,
+            pairs: parsed.pairs || defaultPairs,
+            results: parsed.results || [],
+            settings: Object.assign({
+              sessionSeconds: 120,
+              stageTargets: [15, 20, 25],
+              soundEnabled: true,
+              selectedGroupId: (parsed.groups && parsed.groups[0] && parsed.groups[0].id) || defaultGroups[0].id,
+            }, parsed.settings || {}),
+            training: createTrainingState(
+              (parsed.settings && parsed.settings.sessionSeconds) || DEFAULT_SESSION_SECONDS
+            ),
+            ui: {
+              modal: null,
+              settingsGroupId: parsed.ui?.settingsGroupId || null,
+              lastRecordResultId: parsed.ui?.lastRecordResultId || null,
+              flashResultId: parsed.ui?.flashResultId || null,
+            },
+          };
+        }
+      } catch (error) {
+        console.error('loadState error', error);
+      }
+      return {
+        view: 'training',
+        groups: defaultGroups,
+        pairs: defaultPairs,
+        results: [],
+        settings: {
+          sessionSeconds: 120,
+          stageTargets: [15, 20, 25],
+          soundEnabled: true,
+          selectedGroupId: defaultGroups[0].id,
+        },
+        training: createTrainingState(DEFAULT_SESSION_SECONDS),
+        ui: { modal: null, settingsGroupId: null, lastRecordResultId: null, flashResultId: null },
+      };
+    }
+
+    function persistState() {
+      const payload = {
+        view: state.view,
+        groups: state.groups,
+        pairs: state.pairs,
+        results: state.results,
+        settings: state.settings,
+        ui: {
+          settingsGroupId: state.ui.settingsGroupId,
+          lastRecordResultId: state.ui.lastRecordResultId,
+          flashResultId: state.ui.flashResultId,
+        }
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    }
+
+    function createTrainingState(sessionSeconds = DEFAULT_SESSION_SECONDS) {
+      return {
+        running: false,
+        stageIndex: 0,
+        stageCorrect: 0,
+        totalCorrect: 0,
+        wrongAttempts: 0,
+        selectedLeftId: null,
+        selectedRightId: null,
+        leftCards: [],
+        rightCards: [],
+        queue: [],
+        startTime: null,
+        stageStartTime: null,
+        timeLeft: sessionSeconds,
+        timerId: null,
+        groupId: null,
+        paused: false,
+        pendingMatchedIds: [],
+        activeElapsedMs: 0,
+        stageElapsedMs: 0,
+      };
+    }
+
+    function saveAndRender() {
+      persistState();
+      render();
+    }
+
+    function shuffle(array) {
+      const copy = [...array];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function formatTime(seconds) {
+      const s = Math.max(0, Math.floor(seconds));
+      const mm = String(Math.floor(s / 60)).padStart(2, '0');
+      const ss = String(s % 60).padStart(2, '0');
+      return `${mm}:${ss}`;
+    }
+
+    function groupPairs(groupId) {
+      return state.pairs.filter((pair) => pair.groupId === groupId && pair.isActive);
+    }
+
+    function ensureDefaultContent() {
+      const nameToGroup = new Map(state.groups.map((group) => [group.name, group]));
+      for (const defaultGroup of defaultGroups) {
+        if (!nameToGroup.has(defaultGroup.name)) {
+          state.groups.push({ ...defaultGroup });
+        }
+      }
+      const existingByGroupNameAndPair = new Set(
+        state.pairs.map((pair) => {
+          const group = state.groups.find((item) => item.id === pair.groupId);
+          return `${group?.name || ''}::${pair.ua.toLowerCase()}::${pair.en.toLowerCase()}`;
+        })
+      );
+      for (const pair of defaultPairs) {
+        const defaultGroup = defaultGroups.find((group) => group.id === pair.groupId);
+        const actualGroup = state.groups.find((group) => group.name === defaultGroup?.name);
+        const key = `${defaultGroup?.name || ''}::${pair.ua.toLowerCase()}::${pair.en.toLowerCase()}`;
+        if (actualGroup && !existingByGroupNameAndPair.has(key)) {
+          state.pairs.push({ ...pair, id: crypto.randomUUID(), groupId: actualGroup.id });
+          existingByGroupNameAndPair.add(key);
+        }
+      }
+    }
+
+    function ensureSelectedGroup() {
+      ensureDefaultContent();
+      if (!state.groups.some((group) => group.id === state.settings.selectedGroupId)) {
+        state.settings.selectedGroupId = state.groups[0]?.id || null;
+      }
+    }
+
+    function openModal(content) {
+      state.ui.modal = content;
+      renderModal();
+    }
+
+    function closeModal() {
+      state.ui.modal = null;
+      renderModal();
+    }
+
+    function beep(type) {
+      if (!state.settings.soundEnabled) return;
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      const audioContext = beep.ctx || (beep.ctx = new AudioContextClass());
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.type = type === 'record' ? 'triangle' : (type === 'success' ? 'sine' : 'square');
+
+      const start = audioContext.currentTime;
+      if (type === 'success') {
+        oscillator.frequency.setValueAtTime(880, start);
+      } else if (type === 'record') {
+        oscillator.frequency.setValueAtTime(740, start);
+        oscillator.frequency.exponentialRampToValueAtTime(880, start + 0.12);
+        oscillator.frequency.exponentialRampToValueAtTime(1175, start + 0.28);
+      } else {
+        oscillator.frequency.setValueAtTime(180, start);
+        oscillator.frequency.exponentialRampToValueAtTime(120, start + 0.12);
+      }
+
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.12, start + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + (type === 'record' ? 0.34 : type === 'success' ? 0.18 : 0.22));
+      oscillator.start(start);
+      oscillator.stop(start + (type === 'record' ? 0.36 : type === 'success' ? 0.2 : 0.24));
+    }
+
+
+    function triggerLatestResultFlash(resultId) {
+      state.ui.flashResultId = resultId;
+      saveAndRender();
+      setTimeout(() => {
+        if (state.ui.flashResultId === resultId) {
+          state.ui.flashResultId = null;
+          persistState();
+          render();
+        }
+      }, 1450);
+    }
+
+    function startTraining() {
+      ensureSelectedGroup();
+      const groupId = state.settings.selectedGroupId;
+      const pairs = groupPairs(groupId);
+      if (pairs.length < 10) {
+        openModal({
+          type: 'info',
+          title: 'Недостатньо слів',
+          message: 'Для старту потрібно щонайменше 10 пар у вибраній групі.',
+          actions: [{ label: 'Ок', variant: 'secondary', onClick: closeModal }],
+        });
+        return;
+      }
+
+      stopTimer();
+      state.training = createTrainingState(state.settings.sessionSeconds);
+      state.training.running = true;
+      state.training.groupId = groupId;
+      state.training.queue = shuffle(pairs);
+      state.training.timeLeft = state.settings.sessionSeconds;
+      state.training.startTime = Date.now();
+      state.training.stageStartTime = Date.now();
+      seedBoard();
+      render();
+      startTimer();
+    }
+
+    function getBestResultForGroup(groupId, excludeId = null) {
+      return state.results
+        .filter((item) => item.groupId === groupId && item.id !== excludeId)
+        .sort((a, b) => compareResults(b, a))[0] || null;
+    }
+
+    function getGlobalBestResult() {
+      return state.results
+        .slice()
+        .sort((a, b) => compareResults(b, a))[0] || null;
+    }
+
+
+    function getTrainingElapsedSeconds(training) {
+      const liveMs = training.startTime ? (Date.now() - training.startTime) : 0;
+      return Math.round((training.activeElapsedMs + liveMs) / 1000);
+    }
+
+    function getStageElapsedSeconds(training) {
+      const liveMs = training.stageStartTime ? (Date.now() - training.stageStartTime) : 0;
+      return Math.round((training.stageElapsedMs + liveMs) / 1000);
+    }
+
+    function pauseTrainingClock() {
+      if (!state.training.running || state.training.paused) return;
+      if (state.training.startTime) {
+        state.training.activeElapsedMs += Date.now() - state.training.startTime;
+        state.training.startTime = null;
+      }
+      if (state.training.stageStartTime) {
+        state.training.stageElapsedMs += Date.now() - state.training.stageStartTime;
+        state.training.stageStartTime = null;
+      }
+      state.training.paused = true;
+    }
+
+    function resumeTrainingClock(resetStage = false) {
+      if (!state.training.running) return;
+      if (!state.training.startTime) {
+        state.training.startTime = Date.now();
+      }
+      if (resetStage) {
+        state.training.stageElapsedMs = 0;
+      }
+      if (!state.training.stageStartTime) {
+        state.training.stageStartTime = Date.now();
+      }
+      state.training.paused = false;
+    }
+
+    function formatElapsedTime(seconds) {
+      return formatTime(seconds);
+    }
+
+    function buildResult(training, reason = 'finished') {
+      const elapsed = getTrainingElapsedSeconds(training);
+      const accuracy = training.totalCorrect + training.wrongAttempts > 0
+        ? Math.round((training.totalCorrect / (training.totalCorrect + training.wrongAttempts)) * 100)
+        : 0;
+      const group = state.groups.find((item) => item.id === training.groupId);
+      const avgSpeed = training.totalCorrect > 0 ? Number((elapsed / training.totalCorrect).toFixed(2)) : 0;
+
+      return {
+        id: crypto.randomUUID(),
+        groupId: training.groupId,
+        groupNameSnapshot: group?.name || 'Без назви',
+        stageReached: Math.min(training.stageIndex + 1, state.settings.stageTargets.length),
+        correctPairs: training.totalCorrect,
+        wrongAttempts: training.wrongAttempts,
+        accuracy,
+        timeSpentSec: elapsed,
+        timeLeftSec: Math.max(0, Math.floor(training.timeLeft)),
+        avgSecondsPerAnswer: avgSpeed,
+        completedAt: Date.now(),
+        endReason: reason,
+        stageTargets: [...state.settings.stageTargets],
+        sessionSeconds: state.settings.sessionSeconds,
+      };
+    }
+
+    function compareResults(a, b) {
+      if (a.correctPairs !== b.correctPairs) return a.correctPairs - b.correctPairs;
+      if (a.accuracy !== b.accuracy) return a.accuracy - b.accuracy;
+      if (a.avgSecondsPerAnswer !== b.avgSecondsPerAnswer) return b.avgSecondsPerAnswer - a.avgSecondsPerAnswer;
+      if (a.timeLeftSec !== b.timeLeftSec) return a.timeLeftSec - b.timeLeftSec;
+      return 0;
+    }
+
+    function stopTrainingAndStore(reason = 'finished') {
+      stopTimer();
+      const training = state.training;
+      if (!training.running && training.totalCorrect === 0 && training.wrongAttempts === 0) {
+        return;
+      }
+
+      const result = buildResult(training, reason);
+      const previousBest = getBestResultForGroup(result.groupId);
+      const isNewRecord = result.correctPairs > 0 && (!previousBest || compareResults(result, previousBest) > 0);
+
+      state.results.unshift(result);
+      state.training = createTrainingState(state.settings.sessionSeconds);
+      state.view = 'results';
+      state.ui.lastRecordResultId = isNewRecord ? result.id : null;
+      saveAndRender();
+
+      if (isNewRecord) {
+        beep('record');
+        openModal({
+          type: 'recordCelebration',
+          title: 'Новий рекорд!',
+          message: `Ти встановив новий рекорд у групі "${result.groupNameSnapshot}".`,
+          result,
+          onClose: () => {
+            closeModal();
+            triggerLatestResultFlash(result.id);
+          },
+        });
+      } else {
+        beep('success');
+        openModal({
+          type: 'sessionComplete',
+          title: 'Сесію завершено',
+          result,
+          onClose: () => {
+            closeModal();
+            triggerLatestResultFlash(result.id);
+          },
+        });
+      }
+    }
+
+    function startTimer() {
+      stopTimer();
+      state.training.timerId = setInterval(() => {
+        if (!state.training.running || state.training.paused) return;
+        state.training.timeLeft -= 1;
+        if (state.training.timeLeft <= 0) {
+          state.training.timeLeft = 0;
+          render();
+          stopTrainingAndStore('timeout');
+          return;
+        }
+        renderTopbar();
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (state.training.timerId) {
+        clearInterval(state.training.timerId);
+        state.training.timerId = null;
+      }
+    }
+
+    function seedBoard() {
+      const visible = [];
+      while (visible.length < BOARD_TARGET_SIZE && state.training.queue.length > 0) {
+        visible.push(state.training.queue.shift());
+      }
+      state.training.leftCards = shuffle(visible.map((pair) => ({ id: pair.id, text: pair.ua, side: 'left', status: 'default' })));
+      const rightSource = shuffleAvoidAligned(visible, visible.map((pair) => pair.id));
+      state.training.rightCards = rightSource.map((pair) => ({ id: pair.id, text: pair.en, side: 'right', status: 'default' }));
+      state.training.pendingMatchedIds = [];
+    }
+
+    function shuffleAvoidAligned(visiblePairs, leftOrderIds = null) {
+      if (visiblePairs.length <= 1) return [...visiblePairs];
+      const referenceIds = leftOrderIds || visiblePairs.map((pair) => pair.id);
+      let tries = 0;
+      let shuffled = shuffle(visiblePairs);
+      while (tries < 30 && shuffled.some((pair, index) => pair.id === referenceIds[index])) {
+        shuffled = shuffle(visiblePairs);
+        tries += 1;
+      }
+      return shuffled;
+    }
+
+    function refillBoard(matchedIds = []) {
+      if (!matchedIds.length) return;
+
+      const target = state.settings.stageTargets[state.training.stageIndex];
+      const currentVisibleCount = state.training.leftCards.filter((card) => card.status !== 'hidden').length;
+
+      let allowedNewPairs = Math.max(0, target - state.training.stageCorrect - currentVisibleCount);
+
+      const leftReplacements = [];
+      const rightReplacements = [];
+
+      for (const matchedId of matchedIds) {
+        const leftIndex = state.training.leftCards.findIndex((card) => card.id === matchedId);
+        const rightIndex = state.training.rightCards.findIndex((card) => card.id === matchedId);
+        if (leftIndex === -1 || rightIndex === -1) continue;
+
+        let nextPair = null;
+        if (allowedNewPairs > 0) {
+          nextPair = state.training.queue.shift() || null;
+          if (nextPair) {
+            allowedNewPairs -= 1;
+          }
+        }
+
+        leftReplacements.push({ matchedId, index: leftIndex, pair: nextPair });
+        rightReplacements.push({ matchedId, index: rightIndex, pair: nextPair });
+      }
+
+      for (const replacement of leftReplacements) {
+        if (!replacement.pair) {
+          state.training.leftCards[replacement.index] = {
+            id: `hidden-left-${replacement.index}`,
+            text: '',
+            side: 'left',
+            status: 'hidden',
+          };
+          continue;
+        }
+
+        state.training.leftCards[replacement.index] = {
+          id: replacement.pair.id,
+          text: replacement.pair.ua,
+          side: 'left',
+          status: 'incoming',
+        };
+      }
+
+      const pendingRightPairs = rightReplacements.filter((item) => item.pair).map((item) => item.pair);
+      const shuffledRightPairs = shuffleAvoidAligned(
+        pendingRightPairs,
+        leftReplacements.filter((item) => item.pair).map((item) => item.pair.id),
+      );
+
+      let rightPairIndex = 0;
+
+      for (const replacement of rightReplacements) {
+        if (!replacement.pair) {
+          state.training.rightCards[replacement.index] = {
+            id: `hidden-right-${replacement.index}`,
+            text: '',
+            side: 'right',
+            status: 'hidden',
+          };
+          continue;
+        }
+
+        const pair = shuffledRightPairs[rightPairIndex];
+        rightPairIndex += 1;
+
+        state.training.rightCards[replacement.index] = {
+          id: pair.id,
+          text: pair.en,
+          side: 'right',
+          status: 'incoming',
+        };
+      }
+
+      requestAnimationFrame(() => {
+        for (const card of state.training.leftCards) {
+          if (card.status === 'incoming') card.status = 'default';
+        }
+        for (const card of state.training.rightCards) {
+          if (card.status === 'incoming') card.status = 'default';
+        }
+        render();
+      });
+
+      state.training.selectedLeftId = null;
+      state.training.selectedRightId = null;
+      state.training.pendingMatchedIds = [];
+    }
+
+    function handleCardClick(side, id) {
+      const training = state.training;
+      if (!training.running || training.paused) return;
+      const collection = side === 'left' ? training.leftCards : training.rightCards;
+      const card = collection.find((item) => item.id === id);
+      if (!card || card.status === 'hidden' || card.status === 'disabled' || card.status === 'correct') return;
+
+      if (side === 'left') {
+        training.selectedLeftId = training.selectedLeftId === id ? null : id;
+      } else {
+        training.selectedRightId = training.selectedRightId === id ? null : id;
+      }
+
+      markSelection();
+      render();
+
+      if (training.selectedLeftId && training.selectedRightId) {
+        checkPair();
+      }
+    }
+
+    function markSelection() {
+      for (const card of state.training.leftCards) {
+        if (card.status === 'correct' || card.status === 'hidden') continue;
+        card.status = card.id === state.training.selectedLeftId ? 'selected' : 'default';
+      }
+      for (const card of state.training.rightCards) {
+        if (card.status === 'correct' || card.status === 'hidden') continue;
+        card.status = card.id === state.training.selectedRightId ? 'selected' : 'default';
+      }
+    }
+
+    function clearPendingSelection() {
+      state.training.selectedLeftId = null;
+      state.training.selectedRightId = null;
+      for (const card of state.training.leftCards) {
+        if (card.status === 'selected') card.status = 'default';
+      }
+      for (const card of state.training.rightCards) {
+        if (card.status === 'selected') card.status = 'default';
+      }
+    }
+
+    function isBoardEmpty() {
+      return state.training.leftCards.every((card) => card.status === 'hidden');
+    }
+
+    function finalizeMatchedBatch(force = false) {
+      const training = state.training;
+      if (!training.pendingMatchedIds.length) return;
+
+      const target = state.settings.stageTargets[training.stageIndex];
+      const remainingToTarget = Math.max(0, target - training.stageCorrect);
+      const shouldReplaceNow =
+        force ||
+        remainingToTarget <= BOARD_TARGET_SIZE ||
+        training.pendingMatchedIds.length >= BATCH_REPLACEMENT_SIZE ||
+        isBoardEmpty();
+
+        if (!shouldReplaceNow) {
+          render();
+          return;
+        }
+
+      const matchedIds = [...training.pendingMatchedIds];
+      refillBoard(matchedIds);
+
+      if (training.stageCorrect >= target) {
+        onStageComplete();
+        return;
+      }
+
+      const wordsExhausted = training.queue.length === 0 && isBoardEmpty();
+      if (wordsExhausted) {
+        stopTrainingAndStore('out_of_words');
+        return;
+      }
+
+      render();
+    }
+
+    function checkPair() {
+      const training = state.training;
+      const isCorrect = training.selectedLeftId === training.selectedRightId;
+      const left = training.leftCards.find((item) => item.id === training.selectedLeftId);
+      const right = training.rightCards.find((item) => item.id === training.selectedRightId);
+      if (!left || !right) return;
+
+      if (isCorrect) {
+        left.status = 'correct';
+        right.status = 'correct';
+        training.totalCorrect += 1;
+        training.stageCorrect += 1;
+        training.pendingMatchedIds.push(left.id);
+        clearPendingSelection();
+        beep('success');
+        render();
+
+        setTimeout(() => {
+          left.status = 'hidden';
+          right.status = 'hidden';
+          finalizeMatchedBatch();
+        }, 330);
+      } else {
+        left.status = 'incorrect';
+        right.status = 'incorrect';
+        training.wrongAttempts += 1;
+        beep('error');
+        render();
+        setTimeout(() => {
+          clearPendingSelection();
+          render();
+        }, 380);
+      }
+    }
+
+    function openStageCompleteModal(stageNumber, target, spent, stageAvgSpeed) {
+      openModal({
+        type: 'stageComplete',
+        title: `Етап ${stageNumber} завершено`,
+        stats: {
+          'Відгадано': `${target} пар`,
+          'Середня швидкість': `${stageAvgSpeed.toFixed(2)} с`,
+          'Час етапу': formatElapsedTime(spent),
+          'Залишок часу': formatTime(state.training.timeLeft),
+        },
+        onContinue: () => {
+          closeModal();
+          state.training.stageIndex += 1;
+          state.training.stageCorrect = 0;
+          const allPairs = shuffle(groupPairs(state.training.groupId));
+          state.training.queue = allPairs;
+          seedBoard();
+          resumeTrainingClock(true);
+          render();
+        },
+        onStop: () => {
+          openModal({
+            type: 'confirmStopAfterStage',
+            title: 'Точно завершити?',
+            message: 'У тебе ще є час. Завершити сесію зараз?',
+            onBack: () => {
+              openStageCompleteModal(stageNumber, target, spent, stageAvgSpeed);
+            },
+            onConfirm: () => {
+              closeModal();
+              stopTrainingAndStore('user_stop_after_stage');
+            },
+          });
+        },
+      });
+    }
+
+    function onStageComplete() {
+      pauseTrainingClock();
+      const stageNumber = state.training.stageIndex + 1;
+      const spent = getStageElapsedSeconds(state.training);
+      const target = state.settings.stageTargets[state.training.stageIndex];
+      const isLastStage = state.training.stageIndex >= state.settings.stageTargets.length - 1;
+      const stageAvgSpeed = target > 0 ? Number((spent / target).toFixed(2)) : 0;
+
+      if (isLastStage) {
+        setTimeout(() => {
+          stopTrainingAndStore('completed');
+        }, 220);
+        return;
+      }
+
+      openStageCompleteModal(stageNumber, target, spent, stageAvgSpeed);
+    }
+
+    function renderTopbar() {
+      const topbar = document.getElementById('topbar');
+      if (state.view === 'training' && state.training.running) {
+        const stageIndex = state.training.stageIndex;
+        const target = state.settings.stageTargets[stageIndex] || state.settings.stageTargets.at(-1) || 1;
+        const progress = Math.min(100, Math.round((state.training.stageCorrect / target) * 100));
+        topbar.innerHTML = `
+          <div class="row space-between">
+            <div>
+              <h1 class="title">Тренування</h1>
+              <div class="subtitle">Етап ${stageIndex + 1} із ${state.settings.stageTargets.length}</div>
+            </div>
+            <div class="timer">${formatTime(state.training.timeLeft)}</div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress"><div class="progress-bar" style="width:${progress}%"></div></div>
+            <div class="pill">${state.training.stageCorrect}/${target}</div>
+          </div>
+        `;
+      } else if (state.view === 'groupEditor') {
+        const currentGroup = state.groups.find((group) => group.id === state.ui.settingsGroupId);
+        topbar.innerHTML = `
+          <div class="page-header">
+            <div>
+              <h1 class="title">${currentGroup ? escapeHtml(currentGroup.name) : 'Група'}</h1>
+              <div class="subtitle">Редагування слів і назви групи</div>
+            </div>
+            <button class="btn secondary" id="backToSettingsBtn">Назад</button>
+          </div>
+        `;
+      } else {
+        const titles = {
+          training: 'Тренування',
+          results: 'Результати',
+          groups: 'Групи слів',
+          settings: 'Налаштування'
+        };
+        topbar.innerHTML = `
+          <div>
+            <h1 class="title">${titles[state.view] || 'Word Pairs Trainer'}</h1>
+            <div class="subtitle">Word Pairs Trainer (Для Кума)</div>
+          </div>
+        `;
+      }
+    }
+
+
+    function renderCustomSelect({ id, value, options }) {
+      const selected = options.find((item) => item.value === value) || options[0];
+      return `
+        <div class="custom-select" data-custom-select="${id}">
+          <div class="custom-select-trigger">${selected ? selected.label : ''}</div>
+          <div class="custom-select-menu">
+            ${options.map((item) => `
+              <div class="custom-select-option ${item.value === value ? 'active' : ''}" data-custom-select-option="${id}" data-value="${escapeHtmlAttr(item.value)}">${item.label}</div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTrainingView() {
+      if (!state.training.running) {
+        const selectedPairsCount = groupPairs(state.settings.selectedGroupId).length;
+        return `
+          <div class="stack">
+            <div class="panel stack">
+              <div>
+                <h2 class="section-title">Почати сесію</h2>
+                <div class="muted small">Обери групу слів і запускай таймер.</div>
+              </div>
+              <div class="form-field">
+                <label>Група слів</label>
+                ${renderCustomSelect({
+                  id: 'selectedGroup',
+                  value: state.settings.selectedGroupId,
+                  options: state.groups.map((group) => ({
+                    value: group.id,
+                    label: `${escapeHtml(group.name)} (${groupPairs(group.id).length})`
+                  })),
+                })}
+              </div>
+              <div class="grid-2">
+                <div class="summary-card">
+                  <h3>${state.settings.stageTargets.join(' / ')}</h3>
+                  <p>Цілі етапів</p>
+                </div>
+                <div class="summary-card">
+                  <h3>${formatTime(state.settings.sessionSeconds)}</h3>
+                  <p>Тривалість сесії</p>
+                </div>
+              </div>
+              ${selectedPairsCount < 10 ? `<div class="banner">У вибраній групі зараз ${selectedPairsCount} пар. Для старту потрібно щонайменше 10.</div>` : ''}
+              <button class="btn" id="startTrainingBtn">Почати</button>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="stack" id="trainingView">
+          <div class="panel stack">
+            <div class="row space-between">
+              <h2 class="section-title">${escapeHtml((state.groups.find((group) => group.id === state.training.groupId) || {}).name || '')}</h2>
+              <button class="btn secondary" id="finishNowBtn">Завершити</button>
+            </div>
+            <div class="word-grid">
+              <div class="word-col">
+                ${state.training.leftCards.map((card) => renderCard(card)).join('')}
+              </div>
+              <div class="word-col">
+                ${state.training.rightCards.map((card) => renderCard(card)).join('')}
+              </div>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="item">
+              <h3>${state.training.totalCorrect}</h3>
+              <p>Правильних пар</p>
+            </div>
+            <div class="item">
+              <h3>${state.training.wrongAttempts}</h3>
+              <p>Помилок</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderCard(card) {
+      return `
+        <button class="card ${card.status}" data-card-side="${card.side}" data-card-id="${card.id}" ${card.status === 'hidden' ? 'disabled' : ''}>
+          ${escapeHtml(card.text)}
+        </button>
+      `;
+    }
+
+    function renderResultsView() {
+      if (!state.results.length) {
+        return `<div class="panel"><div class="empty">Ще немає жодного результату.</div></div>`;
+      }
+
+      const latest = state.results[0];
+      const best = getGlobalBestResult() || latest;
+      const recordIsLatest = state.ui.lastRecordResultId === latest.id;
+      return `
+        <div class="stack">
+          ${recordIsLatest ? `
+            <div class="panel banner record-banner">
+              <strong>Новий рекорд!</strong><br />
+              ${escapeHtml(latest.groupNameSnapshot)} · ${new Date(latest.completedAt).toLocaleString('uk-UA')}
+            </div>
+          ` : ''}
+          <div class="panel stack best-result-panel">
+            <div>
+              <h2 class="section-title">Найкращий результат</h2>
+              <div class="muted small">${escapeHtml(best.groupNameSnapshot)}</div>
+              <div class="muted tiny">${new Date(best.completedAt).toLocaleString('uk-UA')}</div>
+            </div>
+            <div class="grid-2">
+              <div class="item">
+                <h3>${best.correctPairs}</h3>
+                <p>Правильних пар</p>
+              </div>
+              <div class="item">
+                <h3>${best.accuracy}%</h3>
+                <p>Точність</p>
+              </div>
+              <div class="item">
+                <h3>${best.avgSecondsPerAnswer.toFixed(2)} с</h3>
+                <p>Середня швидкість</p>
+              </div>
+              <div class="item">
+                <h3>${formatElapsedTime(best.timeSpentSec)}</h3>
+                <p>Час</p>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <h2 class="section-title">Всі результати</h2>
+            <div class="list">
+              ${state.results.map((result) => {
+                const itemBest = getBestResultForGroup(result.groupId, result.id);
+                const isRecord = result.correctPairs > 0 && (!itemBest || compareResults(result, itemBest) > 0);
+                const isFlash = state.ui.flashResultId === result.id;
+                return `
+                  <div class="item ${isFlash ? 'result-flash' : ''}">
+                    <div class="row space-between">
+                      <h3>${escapeHtml(result.groupNameSnapshot)}</h3>
+                      <div class="pill">${result.correctPairs} пар</div>
+                    </div>
+                    <p>Етап: ${result.stageReached} · Точність: ${result.accuracy}% · Помилки: ${result.wrongAttempts} · Час: ${formatElapsedTime(result.timeSpentSec)}</p>
+                    <p>Середня швидкість: ${result.avgSecondsPerAnswer.toFixed(2)} с/відповідь</p>
+                    <p>${new Date(result.completedAt).toLocaleString('uk-UA')}${result.endReason === 'out_of_words' ? ' · Слова закінчилися' : ''}</p>
+                    ${isRecord ? '<p style="color:#fde68a;font-weight:700;">🏆 Рекорд для цієї групи</p>' : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderSettingsView() {
+      const minutes = Math.floor(state.settings.sessionSeconds / 60);
+      const seconds = state.settings.sessionSeconds % 60;
+      return `
+        <div class="stack">
+          <div class="panel settings-stack">
+            <div class="form-field">
+              <label>Тривалість сесії</label>
+              <div class="settings-inline-2">
+                <input id="sessionMinutesInput" type="number" min="0" max="59" value="${minutes}" placeholder="Хвилини" />
+                <input id="sessionSecondsInput" type="number" min="0" max="59" value="${seconds}" placeholder="Секунди" />
+              </div>
+            </div>
+            <div class="form-field">
+              <label>Пар на етапі 1</label>
+              <input id="stage1Input" type="number" min="1" max="200" value="${state.settings.stageTargets[0]}" />
+            </div>
+            <div class="form-field">
+              <label>Пар на етапі 2</label>
+              <input id="stage2Input" type="number" min="1" max="200" value="${state.settings.stageTargets[1]}" />
+            </div>
+            <div class="form-field">
+              <label>Пар на етапі 3</label>
+              <input id="stage3Input" type="number" min="1" max="200" value="${state.settings.stageTargets[2]}" />
+            </div>
+            <div class="form-field">
+              <label>Звук</label>
+              ${renderCustomSelect({
+                id: 'soundEnabledSelect',
+                value: String(state.settings.soundEnabled),
+                options: [
+                  { value: 'true', label: 'Увімкнено' },
+                  { value: 'false', label: 'Вимкнено' },
+                ],
+              })}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderGroupsView() {
+      return `
+        <div class="stack">
+          <div class="panel stack">
+            <div class="row" style="justify-content:flex-end;">
+              <button class="btn secondary" id="addGroupBtn">+ Група</button>
+            </div>
+            <div class="list">
+              ${state.groups.map((group) => `
+                <div class="item">
+                  <div class="row space-between">
+                    <h3>${escapeHtml(group.name)}</h3>
+                    <div class="pill">${groupPairs(group.id).length} пар</div>
+                  </div>
+                  <div class="item-actions">
+                    <button class="btn secondary" data-action="open-group" data-group-id="${group.id}">Відкрити</button>
+                    <button class="btn danger" data-action="delete-group" data-group-id="${group.id}">Видалити</button>
+                  </div>
+                </div>
+              `).join('') || '<div class="empty">Створи першу групу.</div>'}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderGroupEditorView() {
+
+      const group = state.groups.find((item) => item.id === state.ui.settingsGroupId);
+      if (!group) {
+        state.view = 'settings';
+        return renderSettingsView();
+      }
+
+      const pairs = groupPairs(group.id);
+      return `
+        <div class="stack">
+          <div class="panel stack">
+            <div class="form-field">
+              <label>Назва групи</label>
+              <input id="groupNameInput" value="${escapeHtmlAttr(group.name)}" />
+            </div>
+            <div class="hr"></div>
+            <div class="grid-2">
+              <div class="form-field">
+                <label>Українське слово</label>
+                <input id="newUaInput" placeholder="Наприклад: кіт" />
+              </div>
+              <div class="form-field">
+                <label>Польське слово</label>
+                <input id="newEnInput" placeholder="Наприклад: kot" />
+              </div>
+            </div>
+            <button class="btn" id="addPairBtn" data-group-id="${group.id}">Додати пару</button>
+          </div>
+
+          <div class="panel">
+            <div class="list">
+              ${pairs.map((pair) => `
+                <div class="item">
+                  <div class="item-head">
+                    <div class="item-content">
+                      <h3>${escapeHtml(pair.ua)} — ${escapeHtml(pair.en)}</h3>
+                      <p>Оновлено: ${new Date(pair.updatedAt).toLocaleString('uk-UA')}</p>
+                    </div>
+                    <div class="item-actions">
+                      <button class="btn secondary" data-action="edit-pair" data-pair-id="${pair.id}">Редагувати</button>
+                      <button class="btn danger" data-action="delete-pair" data-pair-id="${pair.id}">Видалити</button>
+                    </div>
+                  </div>
+                </div>
+              `).join('') || '<div class="empty">У цій групі ще немає слів.</div>'}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function iconMarkup(name) {
+      const icons = {
+        training: `
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="8"></circle>
+            <circle cx="12" cy="12" r="4"></circle>
+            <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"></circle>
+          </svg>
+        `,
+        results: `
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 20V11"></path>
+            <path d="M12 20V4"></path>
+            <path d="M19 20V8"></path>
+            <path d="M3 20h18"></path>
+          </svg>
+        `,
+        groups: `
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 7h16"></path>
+            <path d="M4 12h16"></path>
+            <path d="M4 17h10"></path>
+          </svg>
+        `,
+        settings: `
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.55V21a2 2 0 0 1-4 0v-.09a1.7 1.7 0 0 0-1.04-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1.04H3a2 2 0 0 1 0-4h.09A1.7 1.7 0 0 0 4.64 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.7 1.7 0 0 0 9 4.64a1.7 1.7 0 0 0 1.04-1.55V3a2 2 0 0 1 4 0v.09A1.7 1.7 0 0 0 15.1 4.64a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.7 1.7 0 0 0 19.36 9c.2.49.67.83 1.19.89H21a2 2 0 0 1 0 4h-.09c-.52.06-.99.4-1.51 1.11Z"></path>
+          </svg>
+        `,
+        trophy: `
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 4h8v3a4 4 0 0 1-8 0Z"></path>
+            <path d="M6 5H4a2 2 0 0 0 2 5h1"></path>
+            <path d="M18 5h2a2 2 0 0 1-2 5h-1"></path>
+            <path d="M12 11v4"></path>
+            <path d="M9 21h6"></path>
+            <path d="M10 15h4l1 6H9l1-6Z"></path>
+          </svg>
+        `
+      };
+      return icons[name] || '';
+    }
+
+    function renderBottomNav() {
+      const nav = document.getElementById('bottomNav');
+      const currentView = state.view === 'groupEditor' ? 'groups' : state.view;
+      const items = [
+        { id: 'training', icon: 'training', label: 'Тренування' },
+        { id: 'results', icon: 'results', label: 'Результати' },
+        { id: 'groups', icon: 'groups', label: 'Групи слів' },
+        { id: 'settings', icon: 'settings', label: 'Налаштування' },
+      ];
+      nav.innerHTML = items.map((item) => `
+        <button class="nav-btn ${currentView === item.id ? 'active' : ''}" data-view="${item.id}">
+          <div class="icon">${iconMarkup(item.icon)}</div>
+          <div class="nav-label">${item.label}</div>
+        </button>
+      `).join('');
+    }
+
+    function renderModal() {
+      const backdrop = document.getElementById('modalBackdrop');
+      const modal = document.getElementById('modal');
+      if (!state.ui.modal) {
+        backdrop.classList.remove('open');
+        modal.className = 'modal';
+        modal.innerHTML = '';
+        return;
+      }
+      backdrop.classList.add('open');
+      const modalState = state.ui.modal;
+
+      if (modalState.type === 'stageComplete') {
+        modal.className = 'modal';
+        modal.innerHTML = `
+          <div class="stack">
+            <h2>${modalState.title}</h2>
+            <div class="stat-grid">
+              ${Object.entries(modalState.stats).map(([k, v]) => `
+                <div class="stat"><div class="k">${escapeHtml(k)}</div><div class="v">${escapeHtml(v)}</div></div>
+              `).join('')}
+            </div>
+            <div class="grid-2">
+              <button class="btn secondary" id="modalStopBtn">Завершити</button>
+              <button class="btn" id="modalContinueBtn">Продовжити</button>
+            </div>
+          </div>
+        `;
+        setTimeout(() => {
+          document.getElementById('modalContinueBtn')?.addEventListener('click', modalState.onContinue);
+          document.getElementById('modalStopBtn')?.addEventListener('click', modalState.onStop);
+        }, 0);
+        return;
+      }
+
+      if (modalState.type === 'confirmStopAfterStage') {
+        modal.className = 'modal';
+        modal.innerHTML = `
+          <div class="stack">
+            <h2>${escapeHtml(modalState.title)}</h2>
+            <div class="muted">${escapeHtml(modalState.message)}</div>
+            <div class="grid-2">
+              <button class="btn secondary" id="confirmStopBackBtn">Назад</button>
+              <button class="btn danger" id="confirmStopYesBtn">Так, завершити</button>
+            </div>
+          </div>
+        `;
+        setTimeout(() => {
+          document.getElementById('confirmStopBackBtn')?.addEventListener('click', modalState.onBack);
+          document.getElementById('confirmStopYesBtn')?.addEventListener('click', modalState.onConfirm);
+        }, 0);
+        return;
+      }
+
+      if (modalState.type === 'recordCelebration') {
+        modal.className = 'modal record-modal';
+        modal.innerHTML = `
+          <div class="confetti">
+            <span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <div class="stack" style="position:relative;">
+            <div class="record-badge">${iconMarkup('trophy')}</div>
+            <h2 style="text-align:center;">${escapeHtml(modalState.title)}</h2>
+            <div class="muted" style="text-align:center;">${escapeHtml(modalState.message)}</div>
+            <div class="stat-grid">
+              <div class="stat"><div class="k">Правильних пар</div><div class="v">${modalState.result.correctPairs}</div></div>
+              <div class="stat"><div class="k">Точність</div><div class="v">${modalState.result.accuracy}%</div></div>
+              <div class="stat"><div class="k">Середня швидкість</div><div class="v">${modalState.result.avgSecondsPerAnswer.toFixed(2)} с</div></div>
+              <div class="stat"><div class="k">Час</div><div class="v">${formatElapsedTime(modalState.result.timeSpentSec)}</div></div>
+            </div>
+            <button class="btn" id="recordModalCloseBtn">Круто!</button>
+          </div>
+        `;
+        setTimeout(() => {
+          document.getElementById('recordModalCloseBtn')?.addEventListener('click', modalState.onClose || closeModal);
+        }, 0);
+        return;
+      }
+
+      if (modalState.type === 'sessionComplete') {
+        modal.className = 'modal';
+        modal.innerHTML = `
+          <div class="stack" style="position:relative;">
+            <div class="record-badge" style="background: radial-gradient(circle, rgba(88,204,2,0.20), rgba(21,128,61,0.12)); border-color: rgba(88,204,2,0.28); color:#a3e635;">${iconMarkup('training')}</div>
+            <h2 style="text-align:center;">${escapeHtml(modalState.title)}</h2>
+            <div class="stat-grid">
+              <div class="stat"><div class="k">Правильних пар</div><div class="v">${modalState.result.correctPairs}</div></div>
+              <div class="stat"><div class="k">Точність</div><div class="v">${modalState.result.accuracy}%</div></div>
+              <div class="stat"><div class="k">Середня швидкість</div><div class="v">${modalState.result.avgSecondsPerAnswer.toFixed(2)} с</div></div>
+              <div class="stat"><div class="k">Час</div><div class="v">${formatElapsedTime(modalState.result.timeSpentSec)}</div></div>
+            </div>
+            <button class="btn" id="sessionCompleteCloseBtn">Ок</button>
+          </div>
+        `;
+        setTimeout(() => {
+          document.getElementById('sessionCompleteCloseBtn')?.addEventListener('click', modalState.onClose || closeModal);
+        }, 0);
+        return;
+      }
+
+      if (modalState.type === 'confirmDelete') {
+        modal.className = 'modal';
+        modal.innerHTML = `
+          <div class="stack">
+            <h2>${escapeHtml(modalState.title)}</h2>
+            <div class="muted">${escapeHtml(modalState.message)}</div>
+            <div class="grid-2">
+              <button class="btn secondary" id="confirmDeleteBackBtn">Назад</button>
+              <button class="btn danger" id="confirmDeleteYesBtn">${escapeHtml(modalState.confirmLabel || 'Так, видалити')}</button>
+            </div>
+          </div>
+        `;
+        setTimeout(() => {
+          document.getElementById('confirmDeleteBackBtn')?.addEventListener('click', modalState.onBack || closeModal);
+          document.getElementById('confirmDeleteYesBtn')?.addEventListener('click', modalState.onConfirm);
+        }, 0);
+        return;
+      }
+
+      if (modalState.type === 'addGroup') {
+        modal.className = 'modal';
+        modal.innerHTML = `
+          <div class="stack">
+            <h2>Нова група</h2>
+            <input id="newGroupNameInput" placeholder="Назва групи" />
+            <div class="grid-2">
+              <button class="btn secondary" id="closeAddGroupBtn">Скасувати</button>
+              <button class="btn" id="saveAddGroupBtn">Створити</button>
+            </div>
+          </div>
+        `;
+        setTimeout(() => {
+          document.getElementById('closeAddGroupBtn')?.addEventListener('click', closeModal);
+          document.getElementById('saveAddGroupBtn')?.addEventListener('click', () => {
+            const input = document.getElementById('newGroupNameInput');
+            const name = input.value.trim();
+            if (!name) return;
+            modalState.onSave(name);
+            closeModal();
+          });
+        }, 0);
+        return;
+      }
+
+      if (modalState.type === 'editPair') {
+        modal.className = 'modal';
+        modal.innerHTML = `
+          <div class="stack">
+            <h2>Редагування пари</h2>
+            <div class="form-field"><label>Українське слово</label><input id="editUaInput" value="${escapeHtmlAttr(modalState.pair.ua)}" /></div>
+            <div class="form-field"><label>Польське слово</label><input id="editEnInput" value="${escapeHtmlAttr(modalState.pair.en)}" /></div>
+            <div class="grid-2">
+              <button class="btn secondary" id="closeEditPairBtn">Скасувати</button>
+              <button class="btn" id="saveEditPairBtn">Зберегти</button>
+            </div>
+          </div>
+        `;
+        setTimeout(() => {
+          document.getElementById('closeEditPairBtn')?.addEventListener('click', closeModal);
+          document.getElementById('saveEditPairBtn')?.addEventListener('click', () => {
+            const ua = document.getElementById('editUaInput').value.trim();
+            const en = document.getElementById('editEnInput').value.trim();
+            if (!ua || !en) return;
+            modalState.onSave(ua, en);
+            closeModal();
+          });
+        }, 0);
+        return;
+      }
+
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="stack">
+          <h2>${escapeHtml(modalState.title || 'Повідомлення')}</h2>
+          <div class="muted">${escapeHtml(modalState.message || '')}</div>
+          <button class="btn secondary" id="modalInfoCloseBtn">Ок</button>
+        </div>
+      `;
+      setTimeout(() => {
+        document.getElementById('modalInfoCloseBtn')?.addEventListener('click', () => {
+          if (modalState.actions?.[0]?.onClick) {
+            modalState.actions[0].onClick();
+          } else {
+            closeModal();
+          }
+        });
+      }, 0);
+    }
+
+    function render() {
+      ensureSelectedGroup();
+      renderTopbar();
+      renderBottomNav();
+      const main = document.getElementById('main');
+      if (state.view === 'training') {
+        main.innerHTML = renderTrainingView();
+      }
+      if (state.view === 'results') {
+        main.innerHTML = renderResultsView();
+      }
+      if (state.view === 'settings') {
+        main.innerHTML = renderSettingsView();
+      }
+      if (state.view === 'groups') {
+        main.innerHTML = renderGroupsView();
+      }
+      if (state.view === 'groupEditor') {
+        main.innerHTML = renderGroupEditorView();
+      }
+      renderModal();
+      bindEvents();
+    }
+
+    function bindEvents() {
+      document.querySelectorAll('[data-view]').forEach((button) => {
+        button.onclick = () => {
+          const view = button.dataset.view;
+          state.view = view;
+          saveAndRender();
+        };
+      });
+
+      document.getElementById('backToSettingsBtn')?.addEventListener('click', () => {
+        state.view = 'groups';
+        saveAndRender();
+      });
+
+      document.querySelectorAll('[data-card-side][data-card-id]').forEach((button) => {
+        button.onclick = () => handleCardClick(button.dataset.cardSide, button.dataset.cardId);
+      });
+
+      document.querySelectorAll('[data-custom-select]').forEach((selectEl) => {
+        const id = selectEl.dataset.customSelect;
+        const trigger = selectEl.querySelector('.custom-select-trigger');
+        const options = selectEl.querySelectorAll('[data-custom-select-option]');
+        trigger?.addEventListener('click', (event) => {
+          event.stopPropagation();
+          document.querySelectorAll('[data-custom-select].open').forEach((item) => {
+            if (item !== selectEl) item.classList.remove('open');
+          });
+          selectEl.classList.toggle('open');
+        });
+        options.forEach((option) => {
+          option.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const value = option.dataset.value;
+            if (id === 'selectedGroup') {
+              state.settings.selectedGroupId = value;
+            }
+            if (id === 'soundEnabledSelect') {
+              state.settings.soundEnabled = value === 'true';
+            }
+            saveAndRender();
+          });
+        });
+      });
+
+      document.addEventListener('click', () => {
+        document.querySelectorAll('[data-custom-select].open').forEach((item) => item.classList.remove('open'));
+      });
+
+      document.getElementById('startTrainingBtn')?.addEventListener('click', startTraining);
+      document.getElementById('finishNowBtn')?.addEventListener('click', () => stopTrainingAndStore('manual_finish'));
+
+      const applySessionSettings = () => {
+        const minutes = clampInt(document.getElementById('sessionMinutesInput')?.value, 0, 59, 2);
+        const seconds = clampInt(document.getElementById('sessionSecondsInput')?.value, 0, 59, 0);
+        const totalSeconds = Math.max(30, (minutes * 60) + seconds);
+        const stage1 = clampInt(document.getElementById('stage1Input')?.value, 1, 200, 15);
+        const stage2 = clampInt(document.getElementById('stage2Input')?.value, 1, 200, 20);
+        const stage3 = clampInt(document.getElementById('stage3Input')?.value, 1, 200, 25);
+        state.settings.sessionSeconds = totalSeconds;
+        state.settings.stageTargets = [stage1, stage2, stage3];
+        saveAndRender();
+      };
+
+      ['sessionMinutesInput', 'sessionSecondsInput', 'stage1Input', 'stage2Input', 'stage3Input'].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', applySessionSettings);
+      });
+
+      document.getElementById('addGroupBtn')?.addEventListener('click', () => {
+        openModal({
+          type: 'addGroup',
+          onSave: (name) => {
+            const group = { id: crypto.randomUUID(), name: name.trim(), createdAt: Date.now(), updatedAt: Date.now() };
+            state.groups.unshift(group);
+            state.ui.settingsGroupId = group.id;
+            state.settings.selectedGroupId = group.id;
+            state.view = 'groupEditor';
+            saveAndRender();
+          },
+        });
+      });
+
+      document.querySelectorAll('[data-action="open-group"]').forEach((button) => {
+        button.onclick = () => {
+          state.ui.settingsGroupId = button.dataset.groupId;
+          state.view = 'groupEditor';
+          saveAndRender();
+        };
+      });
+
+      document.querySelectorAll('[data-action="delete-group"]').forEach((button) => {
+        button.onclick = () => {
+          const groupId = button.dataset.groupId;
+          const group = state.groups.find((item) => item.id === groupId);
+          if (!group) return;
+
+          openModal({
+            type: 'confirmDelete',
+            title: 'Видалити групу?',
+            message: `Всі слова групи "${group.name}" теж будуть видалені.`,
+            confirmLabel: 'Так, видалити',
+            onBack: closeModal,
+            onConfirm: () => {
+              closeModal();
+              state.groups = state.groups.filter((item) => item.id !== groupId);
+              state.pairs = state.pairs.filter((item) => item.groupId !== groupId);
+              if (state.ui.settingsGroupId === groupId) state.ui.settingsGroupId = state.groups[0]?.id || null;
+              if (state.settings.selectedGroupId === groupId) state.settings.selectedGroupId = state.groups[0]?.id || null;
+              if (state.view === 'groupEditor') state.view = 'groups';
+              saveAndRender();
+            },
+          });
+        };
+      });
+
+      document.getElementById('groupNameInput')?.addEventListener('change', (event) => {
+        const name = event.target.value.trim();
+        const group = state.groups.find((item) => item.id === state.ui.settingsGroupId);
+        if (!group || !name) return;
+        group.name = name;
+        group.updatedAt = Date.now();
+        saveAndRender();
+      });
+
+      document.getElementById('addPairBtn')?.addEventListener('click', (event) => {
+        const groupId = event.target.dataset.groupId;
+        const uaInput = document.getElementById('newUaInput');
+        const enInput = document.getElementById('newEnInput');
+        const ua = uaInput.value.trim();
+        const en = enInput.value.trim();
+        if (!ua || !en) return;
+        const duplicate = state.pairs.some((pair) => pair.groupId === groupId && pair.ua.toLowerCase() === ua.toLowerCase() && pair.en.toLowerCase() === en.toLowerCase());
+        if (duplicate) {
+          openModal({ type: 'info', title: 'Дублікат', message: 'Така пара вже існує у цій групі.' });
+          return;
+        }
+        state.pairs.unshift({
+          id: crypto.randomUUID(), groupId, ua, en, createdAt: Date.now(), updatedAt: Date.now(), isActive: true,
+        });
+        uaInput.value = '';
+        enInput.value = '';
+        saveAndRender();
+      });
+
+      document.querySelectorAll('[data-action="delete-pair"]').forEach((button) => {
+        button.onclick = () => {
+          const pairId = button.dataset.pairId;
+          const pair = state.pairs.find((item) => item.id === pairId);
+          if (!pair) return;
+
+          openModal({
+            type: 'confirmDelete',
+            title: 'Видалити пару?',
+            message: `Пара "${pair.ua} — ${pair.en}" буде видалена.`,
+            confirmLabel: 'Так, видалити',
+            onBack: closeModal,
+            onConfirm: () => {
+              closeModal();
+              state.pairs = state.pairs.filter((item) => item.id !== pairId);
+              saveAndRender();
+            },
+          });
+        };
+      });
+
+      document.querySelectorAll('[data-action="edit-pair"]').forEach((button) => {
+        button.onclick = () => {
+          const pairId = button.dataset.pairId;
+          const pair = state.pairs.find((item) => item.id === pairId);
+          if (!pair) return;
+          openModal({
+            type: 'editPair',
+            pair,
+            onSave: (ua, en) => {
+              pair.ua = ua;
+              pair.en = en;
+              pair.updatedAt = Date.now();
+              saveAndRender();
+            },
+          });
+        };
+      });
+    }
+
+    function clampInt(value, min, max, fallback) {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return fallback;
+      return Math.max(min, Math.min(max, Math.round(num)));
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeHtmlAttr(text) {
+      return escapeHtml(text).replace(/`/g, '&#096;');
+    }
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js').catch((error) => {
+          console.error('SW registration failed', error);
+        });
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>
